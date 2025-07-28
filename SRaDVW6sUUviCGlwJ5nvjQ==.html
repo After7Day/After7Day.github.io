@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>endless</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      border: 2px solid #555;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <script>
+    const TILE_SIZE = 32;
+    const VIEWPORT_WIDTH = 800;
+    const VIEWPORT_HEIGHT = 600;
+    const BASE_SPEED = 4;
+    const SPRINT_SPEED = 8;
+    const FRICTION = 0.85;
+    const CHEST_POSITION = { x: -55, y: -54 };
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 0, y: 0, vx: 0, vy: 0 };
+    let keys = {};
+
+    document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+    document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+    const loadImage = (src) => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    };
+
+    const tileImages = {
+      grass: loadImage("assets/tiles/grass.png"),
+    };
+
+    const playerImage = loadImage("assets/characters/player.png");
+
+    function generateTile(x, y) {
+      return "grass";
+    }
+
+    function draw() {
+      const offsetX = player.x - VIEWPORT_WIDTH / 2;
+      const offsetY = player.y - VIEWPORT_HEIGHT / 2;
+
+      const startX = Math.floor(offsetX / TILE_SIZE);
+      const startY = Math.floor(offsetY / TILE_SIZE);
+      const cols = Math.ceil(VIEWPORT_WIDTH / TILE_SIZE) + 2;
+      const rows = Math.ceil(VIEWPORT_HEIGHT / TILE_SIZE) + 2;
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const tileX = startX + x;
+          const tileY = startY + y;
+          const tileType = generateTile(tileX, tileY);
+
+          const img = tileImages[tileType];
+          ctx.drawImage(img, tileX * TILE_SIZE - offsetX, tileY * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+
+          if (tileX === CHEST_POSITION.x && tileY === CHEST_POSITION.y) {
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(tileX * TILE_SIZE - offsetX, tileY * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+          }
+        }
+      }
+
+      ctx.drawImage(playerImage, VIEWPORT_WIDTH / 2, VIEWPORT_HEIGHT / 2, TILE_SIZE, TILE_SIZE);
+
+      ctx.fillStyle = "white";
+      ctx.font = "16px monospace";
+      const px = Math.floor(player.x / TILE_SIZE);
+      const py = Math.floor(player.y / TILE_SIZE);
+      ctx.fillText(`x: ${px}, y: ${py}`, 10, 20);
+    }
+
+    function update() {
+      const isSprinting = keys["shift"];
+      const speed = isSprinting ? SPRINT_SPEED : BASE_SPEED;
+
+      let ax = 0, ay = 0;
+      if (keys["w"]) ay -= speed;
+      if (keys["s"]) ay += speed;
+      if (keys["a"]) ax -= speed;
+      if (keys["d"]) ax += speed;
+
+      // 应用加速度
+      player.vx += ax * 0.2;
+      player.vy += ay * 0.2;
+
+      // 应用惯性摩擦
+      player.vx *= FRICTION;
+      player.vy *= FRICTION;
+
+      // 移动玩家
+      player.x += player.vx;
+      player.y += player.vy;
+    }
+
+    function loop() {
+      update();
+      ctx.clearRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+      draw();
+            // 💬 与宝箱交互提示
+      if (px === CHEST_POSITION.x && py === CHEST_POSITION.y && keys[" "]) {
+        ctx.fillStyle = "yellow";
+        ctx.font = "18px monospace";
+        ctx.fillText("发现宝箱！坐标为：(-2251, ~, -5922)", 10, 45);
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
