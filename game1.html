@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>无限大世界</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+      background-color: #aee;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+<canvas id="game" width="800" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// 玩家位置（虚拟世界坐标）
+let player = { x: 0, y: 0 };
+
+// 方向状态
+const keys = {};
+
+// 宝箱位置
+const chest = { x: -2251, y: -5922 };
+
+window.addEventListener("keydown", e => keys[e.key] = true);
+window.addEventListener("keyup", e => keys[e.key] = false);
+
+// 主循环
+function update() {
+  const speed = 5;
+
+  if (keys["ArrowUp"]) player.y -= speed;
+  if (keys["ArrowDown"]) player.y += speed;
+  if (keys["ArrowLeft"]) player.x -= speed;
+  if (keys["ArrowRight"]) player.x += speed;
+}
+
+// 渲染地图和物体
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 世界坐标系偏移 -> 将玩家始终画在屏幕中间
+  const offsetX = canvas.width / 2 - player.x;
+  const offsetY = canvas.height / 2 - player.y;
+
+  // 画网格（模拟大地图）
+  const gridSize = 100;
+  ctx.strokeStyle = "#ccc";
+  for (let x = -5000; x < 5000; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x + offsetX, -5000 + offsetY);
+    ctx.lineTo(x + offsetX, 5000 + offsetY);
+    ctx.stroke();
+  }
+  for (let y = -5000; y < 5000; y += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(-5000 + offsetX, y + offsetY);
+    ctx.lineTo(5000 + offsetX, y + offsetY);
+    ctx.stroke();
+  }
+
+  // 画玩家（红色圆点）
+  ctx.fillStyle = "red";
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 画宝箱（如果出现在视野中）
+  const chestScreenX = chest.x + offsetX;
+  const chestScreenY = chest.y + offsetY;
+  if (
+    chestScreenX >= 0 && chestScreenX <= canvas.width &&
+    chestScreenY >= 0 && chestScreenY <= canvas.height
+  ) {
+    ctx.fillStyle = "gold";
+    ctx.fillRect(chestScreenX - 10, chestScreenY - 10, 20, 20);
+  }
+
+  // 显示坐标
+  ctx.fillStyle = "black";
+  ctx.font = "16px sans-serif";
+  ctx.fillText(`你的位置：(${player.x}, ${player.y})`, 10, 20);
+
+  // 提示靠近宝箱
+  const dx = player.x - chest.x;
+  const dy = player.y - chest.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 50) {
+    ctx.fillStyle = "green";
+    ctx.fillText("你发现了一个宝箱！", 10, 40);
+  }
+}
+
+// 游戏循环
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
